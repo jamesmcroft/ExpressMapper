@@ -20,6 +20,9 @@ namespace ExpressMapper
         }
 
         protected static readonly Type GenericEnumerableType = typeof(IEnumerable<>);
+
+        protected static readonly Type GenericDictionaryType = typeof(IDictionary);
+
         public abstract IDictionary<long, MulticastDelegate> CollectionMappers { get; }
         public abstract void PrecompileCollection<T, TN>();
         public abstract bool DestinationSupport { get; }
@@ -244,6 +247,73 @@ namespace ExpressMapper
                         setType)));
         }
 
+        public virtual BlockExpression MapDictionary(Type srcColtype, Type destColType, Expression srcExpression, Expression destExpression)
+        {
+            //var sourceKeyType = GetCollectioKeyElementType(srcColtype);
+            //var sourceValueType = GetCollectioValueElementType(srcColtype);
+
+            //var destKeyType = GetCollectioKeyElementType(destColType);
+            //var destValueType = GetCollectioValueElementType(destColType);
+
+            //var sourceVariable = Expression.Variable(srcExpression.Type,
+            //    string.Format("{0}SrcKey", Guid.NewGuid().ToString().Replace("-", "_")));
+
+            //var assignSourceFromProp = Expression.Assign(sourceVariable, srcExpression);
+
+            //var destDictionary = typeof(Dictionary<,>).MakeGenericType(destKeyType, destValueType);
+            //var destCol1 = Expression.Variable(destDictionary, string.Format("{0}Dst", Guid.NewGuid().ToString().Replace("-", "_")));
+
+            //var newCol = Expression.New(destDictionary);
+            //var destAssign = Expression.Assign(destCol1, newCol);
+
+            //var closedEnumeratorSourceType = typeof(Dictionary<,>).MakeGenericType(sourceKeyType, sourceValueType);
+            //var closedEnumerableSourceType = GenericDictionaryType.MakeGenericType(sourceKeyType, sourceValueType);
+
+            //var enumerator = Expression.Variable(closedEnumeratorSourceType,
+            //    string.Format("{0}Enum", Guid.NewGuid().ToString().Replace("-", "_")));
+
+            //var assignToEnum = Expression.Assign(enumerator,
+            //    Expression.Call(sourceVariable, closedEnumerableSourceType.GetInfo().GetMethod("GetEnumerator")));
+            //var doMoveNext = Expression.Call(enumerator, typeof(IDictionary).GetInfo().GetMethod("MoveNext"));
+
+            //var current = Expression.Property(enumerator, "Current");
+            //var sourceColItmVariable = Expression.Variable(sourceType,
+            //    string.Format("{0}ItmSrc", Guid.NewGuid().ToString().Replace("-", "_")));
+            //var assignSourceItmFromProp = Expression.Assign(sourceColItmVariable, current);
+
+            //var destColItmVariable = Expression.Variable(destType,
+            //    string.Format("{0}ItmDst", Guid.NewGuid().ToString().Replace("-", "_")));
+
+            //var loopExpression = CollectionLoopExpression(destColl, sourceColItmVariable, destColItmVariable,
+            //    assignSourceItmFromProp, doMoveNext);
+
+            //var resultCollection = ConvertCollection(destExpression.Type, destList, destType, destColl);
+
+            //var assignResult = Expression.Assign(destExpression, resultCollection);
+
+            //var parameters = new List<ParameterExpression> { sourceVariable, destColl, enumerator };
+            //var expressions = new List<Expression>
+            //{
+            //    assignSourceFromProp,
+            //    destAssign,
+            //    assignToEnum,
+            //    loopExpression,
+            //    assignResult
+            //};
+
+            //var blockExpression = Expression.Block(parameters, expressions);
+
+            //var checkSrcForNullExp =
+            //    Expression.IfThenElse(Expression.Equal(srcExpression, StaticExpressions.NullConstant),
+            //        Expression.Assign(destExpression, Expression.Default(destExpression.Type)), blockExpression);
+            //var blockResultExp = Expression.Block(new ParameterExpression[] { }, new Expression[] { checkSrcForNullExp });
+
+
+            //return blockResultExp;
+
+            return null;
+        }
+
         public virtual BlockExpression MapCollection(Type srcColtype, Type destColType, Expression srcExpression,
             Expression destExpression)
         {
@@ -307,24 +377,37 @@ namespace ExpressMapper
             var sourceType = srcExpression.Type;
             var destType = destExpression.Type;
 
-            var tCol = GetEnumerableInterface(sourceType);
-            var tnCol = GetEnumerableInterface(destType);
+            var tDict = GetDictionaryInterface(sourceType);
+            var tnDict = GetDictionaryInterface(destType);
 
-            var blockExpression = (tCol != null && tnCol != null)
-                ? MapCollection(tCol, tnCol, srcExpression, destExpression)
-                : MapProperty(sourceType, destType, srcExpression, destExpression, newDest);
+            if (tDict != null && tnDict != null)
+            {
+                var blockExpress = MapDictionary(tDict, tnDict, srcExpression, destExpression);
 
-            var refSrcType = sourceType.GetInfo().IsClass;
-            var destPropType = destType;
+                return Expression.Assign(srcExpression, destExpression);
+            }
+            else
+            {
 
-            if (!refSrcType) return blockExpression;
+                var tCol = GetEnumerableInterface(sourceType);
+                var tnCol = GetEnumerableInterface(destType);
 
-            var resultExpression =
-                Expression.IfThenElse(Expression.Equal(srcExpression, StaticExpressions.NullConstant),
-                    Expression.Assign(destExpression, Expression.Default(destPropType)),
-                    blockExpression);
-            return resultExpression;
-        }
+                var blockExpression = (tCol != null && tnCol != null)
+                    ? MapCollection(tCol, tnCol, srcExpression, destExpression)
+                    : MapProperty(sourceType, destType, srcExpression, destExpression, newDest);
+
+                var refSrcType = sourceType.GetInfo().IsClass;
+                var destPropType = destType;
+
+                if (!refSrcType) return blockExpression;
+
+                var resultExpression =
+                    Expression.IfThenElse(Expression.Equal(srcExpression, StaticExpressions.NullConstant),
+                        Expression.Assign(destExpression, Expression.Default(destPropType)),
+                        blockExpression);
+                return resultExpression;
+            }
+        }        
 
         public abstract BlockExpression MapProperty(Type srcType, Type destType, Expression srcExpression, Expression destExpression, bool newDest);
 
@@ -377,6 +460,16 @@ namespace ExpressMapper
         internal static Type GetCollectionElementType(Type type)
         {
             return type.IsArray ? type.GetElementType() : GetEnumerableInterface(type).GetInfo().GetGenericArguments()[0];
+        }
+
+        internal static Type GetCollectioKeyElementType(Type type)
+        {
+            return GetDictionaryInterface(type).GetInfo().GetGenericArguments()[0];
+        }
+
+        internal static Type GetCollectioValueElementType(Type type)
+        {
+            return GetDictionaryInterface(type).GetInfo().GetGenericArguments()[1];
         }
 
         internal LoopExpression CollectionLoopExpression(
@@ -467,6 +560,13 @@ namespace ExpressMapper
                 type.GetInfo().GetInterfaces()
                     .FirstOrDefault(t => t.GetInfo().IsGenericType && t.GetGenericTypeDefinition() == GenericEnumerableType)
                 ?? (type.GetInfo().IsGenericType && type.GetInfo().GetInterfaces().Any(t => t == typeof(IEnumerable)) ? type : null);
+        }
+
+        public static Type GetDictionaryInterface(Type type)
+        {
+            return type.GetInfo().GetInterfaces()
+                .FirstOrDefault(t => t.GetInfo().IsGenericType && t.GetGenericTypeDefinition() == GenericDictionaryType)
+                ?? (type.GetInfo().IsGenericType && type.GetInfo().GetInterfaces().Any(t => t == typeof(IDictionary)) ? type : null);
         }
     }
 }

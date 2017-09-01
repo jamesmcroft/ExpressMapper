@@ -38,6 +38,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)NullCheckNestedMemberVisitor.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)ObjMemberTypes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PreciseSubstituteParameterVisitor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ProjectionAccessMemberVisitor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ReturnTypeDifferenceVisitor.cs" />

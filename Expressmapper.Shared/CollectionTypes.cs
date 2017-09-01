@@ -8,6 +8,8 @@
         None = 0,
         Enumerable = 1,
         Queryable = 2,
-        Array = 3
+        Array = 3,
+        Dictionary = 4
+
     }
 }

@@ -200,8 +200,8 @@ namespace ExpressMapper
 
         protected void AutoMapProperty(MemberInfo propertyGet, MemberInfo propertySet)
         {
-            var callSetPropMethod = propertySet.MemberType == MemberTypes.Field ? Expression.Field(DestFakeParameter, propertySet as FieldInfo) : Expression.Property(DestFakeParameter, propertySet as PropertyInfo);
-            var callGetPropMethod = propertyGet.MemberType == MemberTypes.Field ? Expression.Field(SourceParameter, propertyGet as FieldInfo) : Expression.Property(SourceParameter, propertyGet as PropertyInfo);
+            var callSetPropMethod = propertySet.GetMemberType() == ObjMemberTypes.Field ? Expression.Field(DestFakeParameter, propertySet as FieldInfo) : Expression.Property(DestFakeParameter, propertySet as PropertyInfo);
+            var callGetPropMethod = propertyGet.GetMemberType() == ObjMemberTypes.Field ? Expression.Field(SourceParameter, propertyGet as FieldInfo) : Expression.Property(SourceParameter, propertyGet as PropertyInfo);
 
             MapMember(callSetPropMethod, callGetPropMethod);
         }
