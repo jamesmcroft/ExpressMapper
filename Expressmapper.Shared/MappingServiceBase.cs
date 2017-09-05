@@ -15,8 +15,8 @@ namespace ExpressMapper
         protected IMappingServiceProvider MappingServiceProvider { get; private set; }
         internal MappingServiceBase(IMappingServiceProvider mappingServiceProvider)
         {
-            MappingServiceProvider = mappingServiceProvider;
-            TypeMappers = new Dictionary<long, ITypeMapper>();
+            this.MappingServiceProvider = mappingServiceProvider;
+            this.TypeMappers = new Dictionary<long, ITypeMapper>();
         }
 
         protected static readonly Type GenericEnumerableType = typeof(IEnumerable<>);
@@ -29,13 +29,13 @@ namespace ExpressMapper
         public abstract MulticastDelegate MapCollection(long cacheKey);
         public void Reset()
         {
-            CollectionMappers.Clear();
-            TypeMappers.Clear();
+            this.CollectionMappers.Clear();
+            this.TypeMappers.Clear();
         }
 
         public void Compile(CompilationTypes compilationType)
         {
-            var typeMappers = new Dictionary<long, ITypeMapper>(TypeMappers);
+            var typeMappers = new Dictionary<long, ITypeMapper>(this.TypeMappers);
             foreach (var typeMapper in typeMappers)
             {
                 typeMapper.Value.Compile(compilationType);
@@ -44,26 +44,26 @@ namespace ExpressMapper
 
         protected BlockExpression GetCustomMapExpression(Type src, Type dest)
         {
-            var cacheKey = MappingServiceProvider.CalculateCacheKey(src, dest);
-            if (!MappingServiceProvider.CustomMappers.ContainsKey(cacheKey)) return null;
-            CompileGenericCustomTypeMapper(src, dest, MappingServiceProvider.CustomMappers[cacheKey](), cacheKey);
-            return CustomTypeMapperExpCache[cacheKey];
+            var cacheKey = this.MappingServiceProvider.CalculateCacheKey(src, dest);
+            if (!this.MappingServiceProvider.CustomMappers.ContainsKey(cacheKey)) return null;
+            this.CompileGenericCustomTypeMapper(src, dest, this.MappingServiceProvider.CustomMappers[cacheKey](), cacheKey);
+            return this.CustomTypeMapperExpCache[cacheKey];
         }
 
         protected Tuple<List<Expression>, ParameterExpression, ParameterExpression> GetMapExpressions(Type src, Type dest)
         {
-            var cacheKey = MappingServiceProvider.CalculateCacheKey(src, dest);
-            if (TypeMappers.ContainsKey(cacheKey))
+            var cacheKey = this.MappingServiceProvider.CalculateCacheKey(src, dest);
+            if (this.TypeMappers.ContainsKey(cacheKey))
             {
-                return TypeMappers[cacheKey].GetMapExpressions();
+                return this.TypeMappers[cacheKey].GetMapExpressions();
             }
 
             dynamic srcInst = Activator.CreateInstance(src);
             dynamic destInst = Activator.CreateInstance(dest);
             RegisterDynamic(srcInst, destInst);
-            if (TypeMappers.ContainsKey(cacheKey))
+            if (this.TypeMappers.ContainsKey(cacheKey))
             {
-                return TypeMappers[cacheKey].GetMapExpressions();
+                return this.TypeMappers[cacheKey].GetMapExpressions();
             }
 
             throw new MapNotImplementedException(
@@ -72,12 +72,12 @@ namespace ExpressMapper
 
         private void RegisterDynamic<T, TN>(T src, TN dest)
         {
-            MappingServiceProvider.Register<T, TN>();
+            this.MappingServiceProvider.Register<T, TN>();
         }
 
         protected void CompileGenericCustomTypeMapper(Type srcType, Type dstType, ICustomTypeMapper typeMapper, long cacheKey)
         {
-            if (CustomTypeMapperExpCache.ContainsKey(cacheKey)) return;
+            if (this.CustomTypeMapperExpCache.ContainsKey(cacheKey)) return;
 
             var srcTypedExp = Expression.Variable(srcType, "srcTyped");
             var dstTypedExp = Expression.Variable(dstType, "dstTyped");
@@ -100,13 +100,20 @@ namespace ExpressMapper
             var destAssignedExp = Expression.Assign(destExp, dstTypedExp);
 
             var mapCall = Expression.Call(genVariable, methodInfo, contextVarExp);
+
             //var resultVarExp = Expression.Variable(dstType, "result");
             //var resultAssignExp = Expression.Assign(resultVarExp, mapCall);
             var resultAssignExp = Expression.Assign(dstTypedExp, mapCall);
 
-            var blockExpression = Expression.Block(new[] { genVariable, contextVarExp }, assignExp, assignContextExp, sourceAssignedExp, destAssignedExp, resultAssignExp);
+            var blockExpression = Expression.Block(
+                new[] { genVariable, contextVarExp },
+                assignExp,
+                assignContextExp,
+                sourceAssignedExp,
+                destAssignedExp,
+                resultAssignExp);
 
-            CustomTypeMapperExpCache[cacheKey] = Expression.Block(new ParameterExpression[] { }, blockExpression);
+            this.CustomTypeMapperExpCache[cacheKey] = Expression.Block(new ParameterExpression[] { }, blockExpression);
         }
 
         protected virtual bool ComplexMapCondition(Type src, Type dst)
@@ -125,9 +132,9 @@ namespace ExpressMapper
             var destType = destNullableType ?? left.Type;
             var sourceType = sourceNullableType ?? right.Type;
 
-            if (ComplexMapCondition(sourceType, destType))
+            if (this.ComplexMapCondition(sourceType, destType))
             {
-                var customMapExpression = GetCustomMapExpression(right.Type, left.Type);
+                var customMapExpression = this.GetCustomMapExpression(right.Type, left.Type);
                 if (customMapExpression != null)
                 {
                     var srcExp = Expression.Variable(right.Type,
@@ -155,7 +162,7 @@ namespace ExpressMapper
                          Expression.IfThenElse(Expression.Equal(right, Expression.Default(right.Type)),
                             Expression.Assign(left, Expression.Default(left.Type)), resultBlockExp);
 
-                    var releaseExp = Expression.Block(new ParameterExpression[] { }, (right.Type.GetInfo().IsPrimitive || right.Type.GetInfo().IsValueType ? resultBlockExp : (Expression)checkNullExp));
+                    var releaseExp = Expression.Block(new ParameterExpression[] { }, right.Type.GetInfo().IsPrimitive || right.Type.GetInfo().IsValueType ? resultBlockExp : (Expression)checkNullExp);
 
                     return releaseExp;
                 }
@@ -172,7 +179,7 @@ namespace ExpressMapper
 
                 if (destType.GetInfo().IsEnum && sourceType.GetInfo().IsEnum)
                 {
-                    return Expression.Assign(left, Expression.Convert(Expression.Convert(right, _enumImplicitConversionType), destType));
+                    return Expression.Assign(left, Expression.Convert(Expression.Convert(right, this._enumImplicitConversionType), destType));
                 }
 
                 if (typeof(IConvertible).GetInfo().IsAssignableFrom(destType) &&
@@ -186,7 +193,7 @@ namespace ExpressMapper
 
                     return assignExp;
                 }
-                var mapComplexResult = GetDifferentTypeMemberMappingExpression(right, left, newDest);
+                var mapComplexResult = this.GetDifferentTypeMemberMappingExpression(right, left, newDest);
 
                 //                return nullCheckNestedMemberVisitor.CheckNullExpression != null
                 //                    ? Expression.Condition(nullCheckNestedMemberVisitor.CheckNullExpression,
@@ -222,7 +229,19 @@ namespace ExpressMapper
                 right = Expression.Convert(getMethod, setType);
             }
 
-            return Expression.Condition(Expression.NotEqual(left, right), Expression.Assign(left, right), Expression.Default(setType));
+            try
+            {
+                return Expression.Condition(
+                    Expression.NotEqual(left, right),
+                    Expression.Assign(left, right),
+                    Expression.Default(setType));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Ignored
+            }
+
+            return Expression.Assign(left, right);
         }
 
         private static Expression CreateConvertibleAssignExpression(Expression setMethod, Expression getMethod, Type setType, Type getType, Type setNullableType)
@@ -236,14 +255,14 @@ namespace ExpressMapper
                     Expression.NotEqual(getMethod, StaticExpressions.NullConstant),
                         Expression.Assign(left,
                             Expression.Convert(
-                                Expression.Call(typeof(Enum).GetInfo().GetMethod("Parse", new Type[] { typeof(Type), typeof(string), typeof(bool) }), Expression.Constant(setNullableType ?? setType), right, Expression.Constant(true)),
+                                Expression.Call(typeof(Enum).GetInfo().GetMethod("Parse", new[] { typeof(Type), typeof(string), typeof(bool) }), Expression.Constant(setNullableType ?? setType), right, Expression.Constant(true)),
                                 setType)));
             }
             return Expression.IfThen(
                 Expression.NotEqual(Expression.Convert(getMethod, typeof(object)), StaticExpressions.NullConstant),
                 Expression.Assign(left,
                     Expression.Convert(
-                        Expression.Call(typeof(Convert).GetInfo().GetMethod("ChangeType", new Type[] { typeof(object), typeof(Type) }), Expression.Convert(right, typeof(object)), Expression.Constant(setNullableType ?? setType)),
+                        Expression.Call(typeof(Convert).GetInfo().GetMethod("ChangeType", new[] { typeof(object), typeof(Type) }), Expression.Convert(right, typeof(object)), Expression.Constant(setNullableType ?? setType)),
                         setType)));
         }
 
@@ -345,7 +364,7 @@ namespace ExpressMapper
             var destColItmVariable = Expression.Variable(destType,
                 string.Format("{0}ItmDst", Guid.NewGuid().ToString().Replace("-", "_")));
 
-            var loopExpression = CollectionLoopExpression(destColl, sourceColItmVariable, destColItmVariable,
+            var loopExpression = this.CollectionLoopExpression(destColl, sourceColItmVariable, destColItmVariable,
                 assignSourceItmFromProp, doMoveNext);
 
             var resultCollection = ConvertCollection(destExpression.Type, destList, destType, destColl);
@@ -382,7 +401,7 @@ namespace ExpressMapper
 
             if (tDict != null && tnDict != null)
             {
-                var blockExpress = MapDictionary(tDict, tnDict, srcExpression, destExpression);
+                var blockExpress = this.MapDictionary(tDict, tnDict, srcExpression, destExpression);
 
                 return Expression.Assign(srcExpression, destExpression);
             }
@@ -393,8 +412,8 @@ namespace ExpressMapper
                 var tnCol = GetEnumerableInterface(destType);
 
                 var blockExpression = (tCol != null && tnCol != null)
-                    ? MapCollection(tCol, tnCol, srcExpression, destExpression)
-                    : MapProperty(sourceType, destType, srcExpression, destExpression, newDest);
+                    ? this.MapCollection(tCol, tnCol, srcExpression, destExpression)
+                    : this.MapProperty(sourceType, destType, srcExpression, destExpression, newDest);
 
                 var refSrcType = sourceType.GetInfo().IsClass;
                 var destPropType = destType;
@@ -435,7 +454,7 @@ namespace ExpressMapper
 
             var destColItmVariable = Expression.Variable(destType, "ItmDst");
 
-            var loopExpression = CollectionLoopExpression(destColl, sourceColItmVariable, destColItmVariable,
+            var loopExpression = this.CollectionLoopExpression(destColl, sourceColItmVariable, destColItmVariable,
                 assignSourceItmFromProp, doMoveNext);
 
             var resultCollection = ConvertCollection(typeof(TN), destList, destType, destColl);
@@ -479,13 +498,13 @@ namespace ExpressMapper
             BinaryExpression assignSourceItmFromProp,
             MethodCallExpression doMoveNext)
         {
-            var mapExprForType = GetMemberMappingExpression(destColItmVariable, sourceColItmVariable, true);
+            var mapExprForType = this.GetMemberMappingExpression(destColItmVariable, sourceColItmVariable, true);
 
             var addToNewColl = Expression.Call(destColl, "Add", null, destColItmVariable);
 
             var ifTrueBlock = Expression.Block(new[] { sourceColItmVariable, destColItmVariable }, new[] { assignSourceItmFromProp, mapExprForType, addToNewColl });
 
-            var loopExpression = CreateLoopExpression(doMoveNext, ifTrueBlock);
+            var loopExpression = this.CreateLoopExpression(doMoveNext, ifTrueBlock);
 
             return loopExpression;
         }

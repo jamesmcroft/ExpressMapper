@@ -11,13 +11,13 @@ namespace ExpressMapper
 
         public PreciseSubstituteParameterVisitor(KeyValuePair<ParameterExpression, ParameterExpression> src, KeyValuePair<ParameterExpression, ParameterExpression> dest)
         {
-            _src = src;
-            _dest = dest;
+            this._src = src;
+            this._dest = dest;
         }
 
         protected override Expression VisitParameter(ParameterExpression node)
         {
-            return ((_src.Key.Name == node.Name && _src.Key.Type == node.Type) ? _src.Value : (_dest.Key.Name == node.Name && _dest.Key.Type == node.Type) ? _dest.Value : base.VisitParameter(node));
+            return (this._src.Key.Name == node.Name && this._src.Key.Type == node.Type) ? this._src.Value : (this._dest.Key.Name == node.Name && this._dest.Key.Type == node.Type) ? this._dest.Value : base.VisitParameter(node);
         }
     }
 }

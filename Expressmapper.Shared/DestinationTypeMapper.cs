@@ -24,59 +24,59 @@ namespace ExpressMapper
                     .First(mi => mi.Name == MapStr && mi.GetParameters().Length == 2)
                     .MakeGenericMethod(typeof(T), typeof(TN));
 
-            var methodCall = Expression.Call(Expression.Constant(serviceProvider), mapMethod, SourceParameter, DestFakeParameter);
+            var methodCall = Expression.Call(Expression.Constant(serviceProvider), mapMethod, this.SourceParameter, this.DestFakeParameter);
 
-            RecursiveExpressionResult.Add(Expression.Assign(DestFakeParameter, methodCall));
+            this.RecursiveExpressionResult.Add(Expression.Assign(this.DestFakeParameter, methodCall));
         }
 
         protected override void CompileInternal()
         {
-            if (ResultMapFunction != null) return;
+            if (this.ResultMapFunction != null) return;
 
-            ProcessCustomMembers();
-            ProcessCustomFunctionMembers();
-            ProcessFlattenedMembers();
-            ProcessAutoProperties();
+            this.ProcessCustomMembers();
+            this.ProcessCustomFunctionMembers();
+            this.ProcessFlattenedMembers();
+            this.ProcessAutoProperties();
 
             var expressions = new List<Expression>();
 
-            if (BeforeMapHandler != null)
+            if (this.BeforeMapHandler != null)
             {
-                Expression<Action<T, TN>> beforeExpression = (src, dest) => BeforeMapHandler(src, dest);
-                var beforeInvokeExpr = Expression.Invoke(beforeExpression, SourceParameter, DestFakeParameter);
+                Expression<Action<T, TN>> beforeExpression = (src, dest) => this.BeforeMapHandler(src, dest);
+                var beforeInvokeExpr = Expression.Invoke(beforeExpression, this.SourceParameter, this.DestFakeParameter);
                 expressions.Add(beforeInvokeExpr);
             }
 
-            expressions.AddRange(PropertyCache.Values);
+            expressions.AddRange(this.PropertyCache.Values);
 
-            var customProps = CustomPropertyCache.Where(k => !IgnoreMemberList.Contains(k.Key)).Select(k => k.Value);
+            var customProps = this.CustomPropertyCache.Where(k => !this.IgnoreMemberList.Contains(k.Key)).Select(k => k.Value);
             expressions.AddRange(customProps);
 
-            if (AfterMapHandler != null)
+            if (this.AfterMapHandler != null)
             {
-                Expression<Action<T, TN>> afterExpression = (src, dest) => AfterMapHandler(src, dest);
-                var afterInvokeExpr = Expression.Invoke(afterExpression, SourceParameter, DestFakeParameter);
+                Expression<Action<T, TN>> afterExpression = (src, dest) => this.AfterMapHandler(src, dest);
+                var afterInvokeExpr = Expression.Invoke(afterExpression, this.SourceParameter, this.DestFakeParameter);
                 expressions.Add(afterInvokeExpr);
             }
 
-            ResultExpressionList.AddRange(expressions);
-            ResultExpressionList.Insert(0, GetDestionationVariable());
+            this.ResultExpressionList.AddRange(expressions);
+            this.ResultExpressionList.Insert(0, this.GetDestionationVariable());
 
-            expressions.Add(DestFakeParameter);
+            expressions.Add(this.DestFakeParameter);
 
             var finalExpression = Expression.Block(expressions);
 
             var substituteParameterVisitor =
                 new PreciseSubstituteParameterVisitor(
-                    new KeyValuePair<ParameterExpression, ParameterExpression>(SourceParameter, SourceParameter),
-                    new KeyValuePair<ParameterExpression, ParameterExpression>(DestFakeParameter, DestFakeParameter));
+                    new KeyValuePair<ParameterExpression, ParameterExpression>(this.SourceParameter, this.SourceParameter),
+                    new KeyValuePair<ParameterExpression, ParameterExpression>(this.DestFakeParameter, this.DestFakeParameter));
 
             //var substituteParameterVisitor = new SubstituteParameterVisitor(SourceParameter, DestFakeParameter);
 
             var resultExpression = substituteParameterVisitor.Visit(finalExpression);
 
-            var expression = Expression.Lambda<Func<T, TN, TN>>(resultExpression, SourceParameter, DestFakeParameter);
-            ResultMapFunction = expression.Compile();
+            var expression = Expression.Lambda<Func<T, TN, TN>>(resultExpression, this.SourceParameter, this.DestFakeParameter);
+            this.ResultMapFunction = expression.Compile();
         }
     }
 }

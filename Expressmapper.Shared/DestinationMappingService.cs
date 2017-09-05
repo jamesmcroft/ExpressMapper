@@ -26,13 +26,13 @@ namespace ExpressMapper
 
         #region Implementation of IMappingService
 
-        public override IDictionary<long, MulticastDelegate> CollectionMappers => _collectionMappers;
+        public override IDictionary<long, MulticastDelegate> CollectionMappers => this._collectionMappers;
 
         public override bool DestinationSupport => true;
 
         public override MulticastDelegate MapCollection(long cacheKey)
         {
-            return CollectionMappers.ContainsKey(cacheKey) ? CollectionMappers[cacheKey] : null;
+            return this.CollectionMappers.ContainsKey(cacheKey) ? this.CollectionMappers[cacheKey] : null;
         }
 
         public override BlockExpression MapCollection(Type srcColtype, Type destColType, Expression srcExpression, Expression destExpression)
@@ -48,9 +48,9 @@ namespace ExpressMapper
 
             var conditionToCreateList = Expression.NotEqual(srcCount, destCount);
             var notNullCondition = Expression.IfThenElse(conditionToCreateList,
-                MapCollectionNotCountEquals(srcExpression.Type, destExpression.Type, srcExpression,
+                this.MapCollectionNotCountEquals(srcExpression.Type, destExpression.Type, srcExpression,
                     destExpression),
-                MapCollectionCountEquals(srcColtype, destColType, srcExpression, destExpression));
+                this.MapCollectionCountEquals(srcColtype, destColType, srcExpression, destExpression));
 
             var result = Expression.IfThenElse(Expression.NotEqual(destExpression, StaticExpressions.NullConstant), notNullCondition,
                 base.MapCollection(srcColtype, destColType, srcExpression, destExpression));
@@ -74,7 +74,7 @@ namespace ExpressMapper
 
             var assignSourceFromProp = Expression.Assign(sourceVariable, srcExpression);
 
-            var mapExpressions = GetMapExpressions(srcType, destType);
+            var mapExpressions = this.GetMapExpressions(srcType, destType);
             var mapExprForType = mapExpressions.Item1;
             var destVariable = Expression.Variable(destType,
                 $"{destType.Name}_{Guid.NewGuid().ToString().Replace("-", "_")}Dst");
@@ -131,8 +131,8 @@ namespace ExpressMapper
 
         public override void PrecompileCollection<T, TN>()
         {
-            var cacheKey = MappingServiceProvider.CalculateCacheKey(typeof(T), typeof(TN));
-            if (CollectionMappers.ContainsKey(cacheKey)) return;
+            var cacheKey = this.MappingServiceProvider.CalculateCacheKey(typeof(T), typeof(TN));
+            if (this.CollectionMappers.ContainsKey(cacheKey)) return;
 
             var sourceType = GetCollectionElementType(typeof(T));
             var destType = GetCollectionElementType(typeof(TN));
@@ -145,10 +145,10 @@ namespace ExpressMapper
 
             var conditionToCreateList = Expression.NotEqual(srcCount, destCount);
             var notNullCondition = Expression.IfThenElse(conditionToCreateList,
-                MapCollectionNotCountEquals(typeof(T), typeof(TN), sourceVariable, destVariable),
-                MapCollectionCountEquals(typeof(T), typeof(TN), sourceVariable, destVariable));
+                this.MapCollectionNotCountEquals(typeof(T), typeof(TN), sourceVariable, destVariable),
+                this.MapCollectionCountEquals(typeof(T), typeof(TN), sourceVariable, destVariable));
 
-            var newCollBlockExp = CompileCollectionInternal<T, TN>(sourceVariable, destVariable);
+            var newCollBlockExp = this.CompileCollectionInternal<T, TN>(sourceVariable, destVariable);
 
             var result = Expression.IfThenElse(Expression.NotEqual(destVariable, StaticExpressions.NullConstant),
                 notNullCondition,
@@ -165,7 +165,7 @@ namespace ExpressMapper
             var lambda = Expression.Lambda<Func<T, TN, TN>>(block, sourceVariable, destVariable);
             var compiledFunc = lambda.Compile();
 
-            CollectionMappers[cacheKey] = compiledFunc;
+            this.CollectionMappers[cacheKey] = compiledFunc;
         }
 
         #endregion
@@ -193,7 +193,7 @@ namespace ExpressMapper
             {
                 // If it is a list and destCount greater than srcCount
 
-                var equalsBlockExp = MapCollectionCountEquals(tCol, tnCol, sourceVariable, destVariable);
+                var equalsBlockExp = this.MapCollectionCountEquals(tCol, tnCol, sourceVariable, destVariable);
 
                 var getFirstEnumExp = Expression.Call(typeof(Enumerable), "First", new[] { destType }, destVariable);
                 var removeCollFirstExp = Expression.Call(destVariable, destCollection.GetInfo().GetMethod("Remove"),
@@ -211,7 +211,7 @@ namespace ExpressMapper
 
                 // List and Collection - if src count greater than dest
 
-                var mapCollectionSourcePrevail = MapCollectionSourcePrevail(destVariable, sourceType, sourceVariable,
+                var mapCollectionSourcePrevail = this.MapCollectionSourcePrevail(destVariable, sourceType, sourceVariable,
                     destType);
                 var collBlock = Expression.IfThenElse(Expression.GreaterThan(destCount, srcCount), collRemoveBlockExp,
                     mapCollectionSourcePrevail);
@@ -223,7 +223,7 @@ namespace ExpressMapper
 
                 var destListType = typeof(List<>).MakeGenericType(destType);
                 var destVarExp = Expression.Variable(destListType, $"{Guid.NewGuid().ToString("N")}InterimDst");
-                var constructorInfo = destListType.GetInfo().GetConstructor(new Type[] { typeof(int) });
+                var constructorInfo = destListType.GetInfo().GetConstructor(new[] { typeof(int) });
 
                 var newColl = Expression.New(constructorInfo, srcCount);
                 var destAssign = Expression.Assign(destVarExp, newColl);
@@ -256,9 +256,9 @@ namespace ExpressMapper
 
 
                 // If destination list is empty
-                var mapExprForType = GetMemberMappingExpression(destItmVarExp, srcItmVarExp, true);
+                var mapExprForType = this.GetMemberMappingExpression(destItmVarExp, srcItmVarExp, true);
 
-                var ifTrueBlock = IfElseExpr(srcItmVarExp, destItmVarExp, assignDestItmFromProp);
+                var ifTrueBlock = this.IfElseExpr(srcItmVarExp, destItmVarExp, assignDestItmFromProp);
 
                 var mapAndAddItemExp = Expression.IfThenElse(doMoveNextDest, ifTrueBlock, mapExprForType);
                 var addToNewCollNew = Expression.Call(destVarExp, "Add", null, destItmVarExp);
@@ -266,7 +266,7 @@ namespace ExpressMapper
                 var innerLoopBlock = Expression.Block(new[] { srcItmVarExp, destItmVarExp },
                     new Expression[] { assignSourceItmFromProp, mapAndAddItemExp, addToNewCollNew });
 
-                var loopExpression = CreateLoopExpression(doMoveNextSrc, innerLoopBlock);
+                var loopExpression = this.CreateLoopExpression(doMoveNextSrc, innerLoopBlock);
 
                 var resultCollection = ConvertCollection(destVariable.Type, destList, destType, destVarExp);
 
@@ -316,7 +316,7 @@ namespace ExpressMapper
             var destItmVarExp = Expression.Variable(destType, $"{Guid.NewGuid().ToString("N")}ItmDst");
             var assignDestItmFromProp = Expression.Assign(destItmVarExp, currentDest);
 
-            var mapExprForType = GetMemberMappingExpression(destItmVarExp, srcItmVarExp, false);
+            var mapExprForType = this.GetMemberMappingExpression(destItmVarExp, srcItmVarExp, false);
 
             var ifTrueBlock = Expression.Block(new[] { srcItmVarExp, destItmVarExp },
                 new[] { assignSourceItmFromProp, assignDestItmFromProp, mapExprForType });
@@ -369,10 +369,10 @@ namespace ExpressMapper
             var destItmVarExp = Expression.Variable(destType, $"{Guid.NewGuid().ToString("N")}ItmDst");
             var assignDestItmFromProp = Expression.Assign(destItmVarExp, currentDest);
 
-            var ifTrueBlock = IfElseExpr(srcItmVarExp, destItmVarExp, assignDestItmFromProp);
+            var ifTrueBlock = this.IfElseExpr(srcItmVarExp, destItmVarExp, assignDestItmFromProp);
 
             // If destination list is empty
-            var mapExprForType = GetMemberMappingExpression(destItmVarExp, srcItmVarExp, true);
+            var mapExprForType = this.GetMemberMappingExpression(destItmVarExp, srcItmVarExp, true);
 
             var destCollection = typeof(ICollection<>).MakeGenericType(destType);
 
@@ -391,7 +391,7 @@ namespace ExpressMapper
             var innerLoopBlock = Expression.Block(new[] { srcItmVarExp, destItmVarExp },
                 new Expression[] { assignSourceItmFromProp, ifNotEndOfListExp, mapAndAddItemExp });
 
-            var loopExpression = CreateLoopExpression(doMoveNextSrc, innerLoopBlock);
+            var loopExpression = this.CreateLoopExpression(doMoveNextSrc, innerLoopBlock);
 
             var blockExpression = Expression.Block(new[] { endOfListExp, enumeratorSrc, enumeratorDest },
                 new Expression[] { assignInitEndOfListExp, assignToEnumSrc, assignToEnumDest, loopExpression });
@@ -403,7 +403,7 @@ namespace ExpressMapper
             Expression assignDestItmFromProp)
         {
             // TODO: Change name
-            var mapExprForType = GetMemberMappingExpression(destItmVarExp, srcItmVarExp, false);
+            var mapExprForType = this.GetMemberMappingExpression(destItmVarExp, srcItmVarExp, false);
 
             return Expression.Block(new ParameterExpression[] { }, new[] { assignDestItmFromProp, mapExprForType });
         }

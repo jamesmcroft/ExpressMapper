@@ -8,13 +8,16 @@ namespace ExpressMapper
 {
     public class ProjectionAccessMemberVisitor : ExpressionVisitor
     {
-        private Expression _exp;
+        private readonly Expression _exp;
+
         //private ParameterExpression _src;
-        private Type _type;
+        private readonly Type _type;
+
         public ProjectionAccessMemberVisitor(Type type, Expression exp)
         {
-            _exp = exp;
-            _type = type;
+            this._exp = exp;
+            this._type = type;
+
             //_src = src;
         }
 
@@ -29,11 +32,9 @@ namespace ExpressMapper
 
         protected override Expression VisitMember(MemberExpression node)
         {
-            if (node.Expression.Type == _type)
-            {
-                return Expression.PropertyOrField(_exp, node.Member.Name);
-            }
-            return base.VisitMember(node);
+            return node.Expression != null && node.Expression.Type == this._type
+                       ? Expression.PropertyOrField(this._exp, node.Member.Name)
+                       : base.VisitMember(node);
         }
     }
 }

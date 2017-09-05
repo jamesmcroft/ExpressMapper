@@ -17,7 +17,7 @@ namespace ExpressMapper
         /// <param name="isNull"></param>
         public NullCheckNestedMemberVisitor(bool isNull)
         {
-            _isNull = isNull;
+            this._isNull = isNull;
         }
 
         private readonly List<string> _uniquefList = new List<string>();
@@ -33,21 +33,20 @@ namespace ExpressMapper
 
             if (memberExpression != null)
             {
-                if (!_uniquefList.Contains(memberExpression.ToString()))
+                if (!this._uniquefList.Contains(memberExpression.ToString()))
                 {
-                    _uniquefList.Add(memberExpression.ToString());
-                    var expression = _isNull
+                    this._uniquefList.Add(memberExpression.ToString());
+                    var expression = this._isNull
                         ? Expression.Constant(null, memberExpression.Type)
                         : (Expression)Expression.Default(memberExpression.Type);
-                    if (CheckNullExpression == null)
+                    if (this.CheckNullExpression == null)
                     {
-                        CheckNullExpression = Expression.Equal(memberExpression, expression);
+                        this.CheckNullExpression = Expression.Equal(memberExpression, expression);
                     }
                     else
                     {
-                        CheckNullExpression =
-                            Expression.OrElse(Expression.Equal(memberExpression, expression),
-                                CheckNullExpression);
+                        this.CheckNullExpression =
+                            Expression.OrElse(Expression.Equal(memberExpression, expression), this.CheckNullExpression);
                     }
                 }
             }

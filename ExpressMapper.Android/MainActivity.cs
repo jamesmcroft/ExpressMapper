@@ -38,6 +38,11 @@ namespace ExpressMapper.Android
 
             var mapResults = models.Select(Mapper.Map<TestModel, TestModelWrapper>).ToList();
 
+            var model = new TestModel { Text1 = "Hey!" };
+
+            TestModel originalInstance = Mapper.Map<TestModel, TestModel>(model);
+
+            System.Diagnostics.Debug.WriteLine(originalInstance.ToString());
         }
     }
 }

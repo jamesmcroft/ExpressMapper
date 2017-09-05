@@ -9,19 +9,19 @@ namespace ExpressMapper
 
         public ReturnTypeDifferenceVisitor(Expression srcExp)
         {
-            _srcExp = srcExp;
+            this._srcExp = srcExp;
         }
 
 
         protected override Expression VisitMember(MemberExpression node)
         {
-            var memberExpression = _srcExp as MemberExpression;
+            var memberExpression = this._srcExp as MemberExpression;
             if (memberExpression == null)
             {
-                DifferentReturnTypes = true;
+                this.DifferentReturnTypes = true;
                 return base.VisitMember(node);
             }
-            DifferentReturnTypes = memberExpression != node;
+            this.DifferentReturnTypes = memberExpression != node;
             return base.VisitMember(node);
         }
     }

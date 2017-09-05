@@ -29,25 +29,25 @@ namespace ExpressMapper
 
         #region Implementation of IMappingService
 
-        public override IDictionary<long, MulticastDelegate> CollectionMappers => _collectionMappers;
+        public override IDictionary<long, MulticastDelegate> CollectionMappers => this._collectionMappers;
 
         public override void PrecompileCollection<T, TN>()
         {
-            var cacheKey = MappingServiceProvider.CalculateCacheKey(typeof(T), typeof(TN));
-            if (CollectionMappers.ContainsKey(cacheKey)) return;
+            var cacheKey = this.MappingServiceProvider.CalculateCacheKey(typeof(T), typeof(TN));
+            if (this.CollectionMappers.ContainsKey(cacheKey)) return;
 
             var sourceParameterExp = Expression.Parameter(typeof(T), "sourceColl");
-            var blockExp = CompileCollectionInternal<T, TN>(sourceParameterExp);
+            var blockExp = this.CompileCollectionInternal<T, TN>(sourceParameterExp);
             var lambda = Expression.Lambda<Func<T, TN>>(blockExp, sourceParameterExp);
             var compiledFunc = lambda.Compile();
-            CollectionMappers[cacheKey] = compiledFunc;
+            this.CollectionMappers[cacheKey] = compiledFunc;
         }
 
         public override bool DestinationSupport => false;
 
         public override MulticastDelegate MapCollection(long cacheKey)
         {
-            return CollectionMappers.ContainsKey(cacheKey) ? CollectionMappers[cacheKey] : null;
+            return this.CollectionMappers.ContainsKey(cacheKey) ? this.CollectionMappers[cacheKey] : null;
         }
 
         protected override bool ComplexMapCondition(Type src, Type dst)
@@ -64,29 +64,33 @@ namespace ExpressMapper
                         (dst.GetInfo().IsGenericType && dst.GetInfo().GetInterfaces().Any(t => t == typeof(IEnumerable)) ? dst
                             : null);
             if (tCol == null || tnCol == null || (src == typeof(string) && dst == typeof(string)))
-                return (base.ComplexMapCondition(src, dst) ||
+                return base.ComplexMapCondition(src, dst) ||
                         (src == dst && src.GetInfo().IsClass && !src.GetInfo().Assembly.FullName.Contains(MscorlibStr) &&
-                         !src.FullName.StartsWith(SystemNamespaceStr)));
+                         !src.FullName.StartsWith(SystemNamespaceStr));
             return true;
         }
 
         public override BlockExpression MapProperty(Type srcType, Type destType, Expression srcExpression, Expression destExpression, bool newDest)
         {
-            var sourceVariable = Expression.Variable(srcType,
+            var sourceVariable = Expression.Variable(
+                srcType,
                 $"{srcType.Name}_{Guid.NewGuid().ToString().Replace("-", "_")}Src");
             var assignSourceFromProp = Expression.Assign(sourceVariable, srcExpression);
-            var exprForType = GetMapExpressions(srcType, destType);
+            var exprForType = this.GetMapExpressions(srcType, destType);
             var mapExprForType = exprForType.Item1;
-            var destVariable = Expression.Variable(destType,
+            var destVariable = Expression.Variable(
+                destType,
                 $"{destType.Name}_{Guid.NewGuid().ToString().Replace("-", "_")}Dst");
             var blockForSubstitution = Expression.Block(mapExprForType);
 
-            var substBlock =
-                new PreciseSubstituteParameterVisitor(
-                    new KeyValuePair<ParameterExpression, ParameterExpression>(exprForType.Item2, sourceVariable),
-                    new KeyValuePair<ParameterExpression, ParameterExpression>(exprForType.Item3, destVariable))
-                    .Visit(blockForSubstitution) as
-                    BlockExpression;
+            var substBlock = new PreciseSubstituteParameterVisitor(
+                                 new KeyValuePair<ParameterExpression, ParameterExpression>(
+                                     exprForType.Item2,
+                                     sourceVariable),
+                                 new KeyValuePair<ParameterExpression, ParameterExpression>(
+                                     exprForType.Item3,
+                                     destVariable)).Visit(blockForSubstitution) as BlockExpression;
+
             //var substBlock =
             //    new SubstituteParameterVisitor(sourceVariable, destVariable).Visit(blockForSubstitution) as
             //        BlockExpression;
@@ -106,10 +110,10 @@ namespace ExpressMapper
 
         public Expression GetMemberQueryableExpression(Type srcType, Type dstType)
         {
-            var cacheKey = MappingServiceProvider.CalculateCacheKey(srcType, dstType);
-            if (!TypeMappers.ContainsKey(cacheKey)) return null;
+            var cacheKey = this.MappingServiceProvider.CalculateCacheKey(srcType, dstType);
+            if (!this.TypeMappers.ContainsKey(cacheKey)) return null;
 
-            var typeMapper = TypeMappers[cacheKey];
+            var typeMapper = this.TypeMappers[cacheKey];
             if (typeMapper.QueryableGeneralExpression == null)
             {
                 typeMapper.Compile(CompilationTypes.Source);

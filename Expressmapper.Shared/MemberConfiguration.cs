@@ -11,13 +11,13 @@ namespace ExpressMapper
         private readonly ITypeMapper<T, TN>[] _typeMappers;
         public MemberConfiguration(ITypeMapper<T, TN>[] typeMappers, IMappingServiceProvider mappingServiceProvider)
         {
-            _typeMappers = typeMappers;
-            _mappingServiceProvider = mappingServiceProvider;
+            this._typeMappers = typeMappers;
+            this._mappingServiceProvider = mappingServiceProvider;
         }
 
         public IMemberConfiguration<T, TN> InstantiateFunc(Func<T, TN> constructor)
         {
-            foreach (var typeMapper in _typeMappers)
+            foreach (var typeMapper in this._typeMappers)
             {
                 typeMapper.InstantiateFunc(constructor);
             }
@@ -26,7 +26,7 @@ namespace ExpressMapper
 
         public IMemberConfiguration<T, TN> Instantiate(Expression<Func<T, TN>> constructor)
         {
-            foreach (var typeMapper in _typeMappers)
+            foreach (var typeMapper in this._typeMappers)
             {
                 typeMapper.Instantiate(constructor);
             }
@@ -35,7 +35,7 @@ namespace ExpressMapper
 
         public IMemberConfiguration<T, TN> Before(Action<T, TN> beforeHandler)
         {
-            foreach (var typeMapper in _typeMappers)
+            foreach (var typeMapper in this._typeMappers)
             {
                 typeMapper.BeforeMap(beforeHandler);
             }
@@ -44,7 +44,7 @@ namespace ExpressMapper
 
         public IMemberConfiguration<T, TN> After(Action<T, TN> afterHandler)
         {
-            foreach (var typeMapper in _typeMappers)
+            foreach (var typeMapper in this._typeMappers)
             {
                 typeMapper.AfterMap(afterHandler);
             }
@@ -73,11 +73,11 @@ namespace ExpressMapper
 
             if (propertyInfo != null && !propertyInfo.CanWrite || (propertyInfo != null && propertyInfo.CanWrite && !propertyInfo.GetSetMethod(true).IsPublic))
             {
-                Ignore(dest);
+                this.Ignore(dest);
             }
             else
             {
-                foreach (var typeMapper in _typeMappers)
+                foreach (var typeMapper in this._typeMappers)
                 {
                     typeMapper.MapMember(dest, src);
                 }
@@ -97,11 +97,11 @@ namespace ExpressMapper
 
             if (propertyInfo != null && !propertyInfo.CanWrite || (propertyInfo != null && propertyInfo.CanWrite && !propertyInfo.GetSetMethod(true).IsPublic))
             {
-                Ignore(dest);
+                this.Ignore(dest);
             }
             else
             {
-                foreach (var typeMapper in _typeMappers)
+                foreach (var typeMapper in this._typeMappers)
                 {
                     typeMapper.MapFunction(dest, src);
                 }
@@ -120,7 +120,7 @@ namespace ExpressMapper
             {
                 throw new Exception("MemberExpression should return one of the properties of destination class");
             }
-            foreach (var typeMapper in _typeMappers)
+            foreach (var typeMapper in this._typeMappers)
             {
                 typeMapper.Ignore(dest);
             }
@@ -133,12 +133,12 @@ namespace ExpressMapper
             {
                 throw new Exception("MemberExpression should return one of the properties of destination class");
             }
-            return Member(dest, x => value);
+            return this.Member(dest, x => value);
         }
 
         public IMemberConfiguration<T, TN> CaseSensitive(bool caseSensitive)
         {
-            foreach (var typeMapper in _typeMappers)
+            foreach (var typeMapper in this._typeMappers)
             {
                 typeMapper.CaseSensetiveMemberMap(caseSensitive);
             }
@@ -147,7 +147,7 @@ namespace ExpressMapper
 
         public IMemberConfiguration<T, TN> CompileTo(CompilationTypes compilationType)
         {
-            foreach (var typeMapper in _typeMappers)
+            foreach (var typeMapper in this._typeMappers)
             {
                 typeMapper.CompileTo(compilationType);
             }
@@ -157,12 +157,12 @@ namespace ExpressMapper
         public IMemberConfiguration<T, TN> Include<TSub, TNSub>() where TSub : T
                                                                   where TNSub : TN
         {
-            foreach (var typeMapper in _typeMappers)
+            foreach (var typeMapper in this._typeMappers)
             {
                 typeMapper.BaseType = true;
             }
 
-            _mappingServiceProvider.Register<TSub, TNSub>(_typeMappers.First() as IMemberConfigParameters);
+            this._mappingServiceProvider.Register<TSub, TNSub>(this._typeMappers.First() as IMemberConfigParameters);
             return this;
         }
 
@@ -177,13 +177,12 @@ namespace ExpressMapper
         /// </summary>
         public IMemberConfiguration<T, TN> Flatten()
         {
-            var sourceMapperBase =
-                _typeMappers.Single(x => x.MapperType == CompilationTypes.Source) as TypeMapperBase<T, TN>;
+            var sourceMapperBase = this._typeMappers.Single(x => x.MapperType == CompilationTypes.Source) as TypeMapperBase<T, TN>;
 
             if (sourceMapperBase == null)
                 throw new Exception("Failed to find the source mapping.");
             
-            foreach (var typeMapper in _typeMappers)
+            foreach (var typeMapper in this._typeMappers)
             {
                 typeMapper.Flatten();
             }

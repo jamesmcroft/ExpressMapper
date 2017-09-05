@@ -9,12 +9,12 @@ namespace ExpressMapper
 
         public SubstituteParameterVisitor(params Expression[] parametersToReplace)
         {
-            _parametersToReplace = parametersToReplace;
+            this._parametersToReplace = parametersToReplace;
         }
 
         protected override Expression VisitParameter(ParameterExpression node)
         {
-            var substitution = _parametersToReplace.FirstOrDefault(p => p.Type == node.Type);
+            var substitution = this._parametersToReplace.FirstOrDefault(p => p.Type == node.Type);
             return substitution ?? base.VisitParameter(node);
         }
     }

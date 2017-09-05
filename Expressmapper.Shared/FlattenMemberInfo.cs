@@ -25,40 +25,40 @@ namespace ExpressMapper
         public FlattenMemberInfo(PropertyInfo destMember, PropertyInfo[] sourcePathMembers, PropertyInfo lastMemberToAdd, 
             FlattenLinqMethod linqMethodSuffix  = null)
         {
-            _destMember = destMember;
-            _linqMethodSuffix = linqMethodSuffix;
+            this._destMember = destMember;
+            this._linqMethodSuffix = linqMethodSuffix;
 
             var list = sourcePathMembers.ToList();
             list.Add(lastMemberToAdd);
-            _sourcePathMembers = list;
+            this._sourcePathMembers = list;
         }
 
         public override string ToString()
         {
-            var linqMethodStr = _linqMethodSuffix?.ToString() ?? "";
-            return $"dest => dest.{_destMember.Name}, src => src.{string.Join(".",_sourcePathMembers.Select(x => x.Name))}{linqMethodStr}";
+            var linqMethodStr = this._linqMethodSuffix?.ToString() ?? string.Empty;
+            return $"dest => dest.{this._destMember.Name}, src => src.{string.Join(".", this._sourcePathMembers.Select(x => x.Name))}{linqMethodStr}";
         }
 
         public MemberExpression  DestAsMemberExpression<TDest>()
         {
-            return Expression.Property(Expression.Parameter(typeof(TDest), "dest"), _destMember);
+            return Expression.Property(Expression.Parameter(typeof(TDest), "dest"), this._destMember);
         }
 
         public Expression SourceAsExpression<TSource>()
         {
             var paramExpression = Expression.Parameter(typeof(TSource), "src");
-            return NestedExpressionProperty(paramExpression, _sourcePathMembers.Reverse().ToArray());
+            return this.NestedExpressionProperty(paramExpression, this._sourcePathMembers.Reverse().ToArray());
         }
 
         //-------------------------------------------------------
         //private methods
 
-        private Expression NestedExpressionProperty(Expression expression, PropertyInfo [] properties)
+        private Expression NestedExpressionProperty(Expression expression, PropertyInfo[] properties)
         {
             if (properties.Length > 1)
             {
                 return Expression.Property(
-                    NestedExpressionProperty(
+                    this.NestedExpressionProperty(
                         expression,
                         properties.Skip(1).ToArray()
                         ),
@@ -68,9 +68,9 @@ namespace ExpressMapper
             //we are at the end 
             var finalProperty = Expression.Property(expression, properties[0]);
 
-            return _linqMethodSuffix == null
+            return this._linqMethodSuffix == null
                 ? (Expression)finalProperty
-                : _linqMethodSuffix.AsMethodCallExpression(finalProperty, properties[0], _destMember);
+                : this._linqMethodSuffix.AsMethodCallExpression(finalProperty, properties[0], this._destMember);
         }
     }
 }
