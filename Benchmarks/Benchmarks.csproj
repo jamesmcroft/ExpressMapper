@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Benchmarks</RootNamespace>
     <AssemblyName>Benchmarks</AssemblyName>
-    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -108,12 +108,14 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ExpressMapper NET45\ExpressMapper NET45.csproj">
-      <Project>{5e211506-6d4e-4cd8-b454-d02672cf948a}</Project>
-      <Name>ExpressMapper NET45</Name>
+    <ProjectReference Include="..\ExpressMapper\ExpressMapper.csproj">
+      <Project>{6f269b19-bb50-4e3a-a895-9d99c1917f60}</Project>
+      <Name>ExpressMapper</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -132,9 +132,9 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ExpressMapper PCL NET45\ExpressMapper PCL NET45.csproj">
-      <Project>{909366ad-7ff2-4197-a340-cc858c4b8ad1}</Project>
-      <Name>ExpressMapper PCL NET45</Name>
+    <ProjectReference Include="..\ExpressMapper\ExpressMapper.csproj">
+      <Project>{6f269b19-bb50-4e3a-a895-9d99c1917f60}</Project>
+      <Name>ExpressMapper</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">

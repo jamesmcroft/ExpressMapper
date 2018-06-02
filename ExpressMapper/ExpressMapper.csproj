@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard1.4</TargetFramework>
+    <RootNamespace>ExpressMapper</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Reflection.TypeExtensions">
+      <HintPath>..\..\..\..\.nuget\packages\system.reflection.typeextensions\4.1.0\ref\netstandard1.3\System.Reflection.TypeExtensions.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="MappingServiceProvider.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="NullCheckNestedMemberVisitor.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+
+</Project>
