@@ -316,12 +316,12 @@ namespace ExpressMapper
 
         protected void ProcessAutoProperties()
         {
-            var getFields = typeof(T).GetTypeInfo().DeclaredFields.Where(x => x.IsPublic);
-            var setFields = typeof(TN).GetTypeInfo().DeclaredFields.Where(x => x.IsPublic);
+            var getFields = typeof(T).GetRuntimeFields().Where(x => x.IsPublic && !x.IsStatic);
+            var setFields = typeof(TN).GetRuntimeFields().Where(x => x.IsPublic && !x.IsStatic);
 
-            var getProps = typeof(T).GetTypeInfo().DeclaredProperties.Where(x => x.PropertyType.GetTypeInfo().IsPublic);
+            var getProps = typeof(T).GetRuntimeProperties().Where(x => x.PropertyType.GetTypeInfo().IsPublic);
 
-            var setProps = typeof(TN).GetTypeInfo().DeclaredProperties.Where(x => x.PropertyType.GetTypeInfo().IsPublic);
+            var setProps = typeof(TN).GetRuntimeProperties().Where(x => x.PropertyType.GetTypeInfo().IsPublic);
 
             var sourceMembers = getFields.Cast<MemberInfo>().Union(getProps);
             var destMembers = setFields.Cast<MemberInfo>().Union(setProps);
@@ -374,7 +374,8 @@ namespace ExpressMapper
                 }
                 else
                 {
-                    chosen = chosen.DeclaringType.GetTypeInfo().IsAssignableFrom(notUniqueMember.DeclaringType.GetTypeInfo())
+                    chosen = chosen.DeclaringType.GetTypeInfo()
+                                 .IsAssignableFrom(notUniqueMember.DeclaringType.GetTypeInfo())
                                  ? notUniqueMember
                                  : chosen;
                 }

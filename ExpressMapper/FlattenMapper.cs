@@ -129,7 +129,7 @@ namespace ExpressMapper
 
         private static IEnumerable<PropertyInfo> GetPropertiesRightAccess(Type classType)
         {
-            return classType.GetTypeInfo().DeclaredProperties.Where(x => x.CanWrite);
+            return classType.GetRuntimeProperties().Where(x => x.GetMethod.IsPublic && !x.GetMethod.IsStatic);
         }
 
         private List<PropertyInfo> FilterOutExactMatches(
