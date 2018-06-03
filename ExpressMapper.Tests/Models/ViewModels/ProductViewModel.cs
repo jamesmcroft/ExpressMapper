@@ -54,7 +54,7 @@
             }
 
             return this.Id == other.Id && this.Name == other.Name && this.Description == other.Description && optionsEquals &&
-                   this.CreatedOn == other.CreatedOn && this.WarehouseOn == other.WarehouseOn && this.Ean == this.Ean &&
+                   this.CreatedOn == other.CreatedOn && this.WarehouseOn == other.WarehouseOn && this.Ean == other.Ean &&
                    this.OptionalGender == other.OptionalGender &&
                    ((this.Brand == null && other.Brand == null) || this.Brand.Equals(other.Brand)) &&
                    ((this.Supplier == null && other.Supplier == null) || this.Supplier.Equals(other.Supplier));

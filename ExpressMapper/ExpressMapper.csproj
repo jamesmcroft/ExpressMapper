@@ -6,9 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="System.Reflection.TypeExtensions">
-      <HintPath>..\..\..\..\.nuget\packages\system.reflection.typeextensions\4.1.0\ref\netstandard1.3\System.Reflection.TypeExtensions.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
+    <PackageReference Include="System.Dynamic.Runtime" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>

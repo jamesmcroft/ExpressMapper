@@ -250,7 +250,7 @@ namespace ExpressMapper
 
                 var destListType = typeof(List<>).MakeGenericType(destType);
                 var destVarExp = Expression.Variable(destListType, $"{Guid.NewGuid().ToString("N")}InterimDst");
-                var constructorInfo = destListType.GetTypeInfo().DeclaredConstructors.FirstOrDefault(x => x.GetConstructor(typeof(int)));
+                var constructorInfo = destListType.GetTypeInfo().GetConstructor(typeof(int));
 
                 var newColl = Expression.New(constructorInfo, srcCount);
                 var destAssign = Expression.Assign(destVarExp, newColl);

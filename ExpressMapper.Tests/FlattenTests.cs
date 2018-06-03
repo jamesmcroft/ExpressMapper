@@ -290,7 +290,7 @@
 
             //VERIFY  
             Assert.AreEqual(
-                "Error error occured trying to compile mapping for: source ExpressMapper.Tests.Model.Models.FatherSons, destination ExpressMapper.Tests.Model.ViewModels.FlattenFatherSonsCountBadDto. See the inner exception for details.",
+                $"Error error occured trying to compile mapping for: source {typeof(FatherSons).FullName}, destination {typeof(FlattenFatherSonsCountBadDto).FullName}. See the inner exception for details.",
                 ex.Message);
             Assert.AreEqual(
                 "We could not find the Method Count() which matched the property SonsCount of type System.String.",

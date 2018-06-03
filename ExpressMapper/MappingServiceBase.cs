@@ -73,8 +73,8 @@ namespace ExpressMapper
                 return this.TypeMappers[cacheKey].GetMapExpressions();
             }
 
-            var srcInst = Activator.CreateInstance(src);
-            var destInst = Activator.CreateInstance(dest);
+            dynamic srcInst = Activator.CreateInstance(src);
+            dynamic destInst = Activator.CreateInstance(dest);
             Register(srcInst, destInst);
             if (this.TypeMappers.ContainsKey(cacheKey))
             {
@@ -107,7 +107,7 @@ namespace ExpressMapper
                 customGenericType);
             var genVariable = Expression.Variable(customGenericType);
             var assignExp = Expression.Assign(genVariable, castToCustomGeneric);
-            var methodInfo = customGenericType.GetInfo().GetMethod("Map");
+            var methodInfo = customGenericType.GetTypeInfo().GetDeclaredMethod("Map");
             var genericMappingContext = typeof(DefaultMappingContext<,>).MakeGenericType(srcType, dstType);
             var newMappingContextExp = Expression.New(genericMappingContext);
             var contextVarExp = Expression.Variable(genericMappingContext, string.Format("context{0}", Guid.NewGuid()));
@@ -212,8 +212,8 @@ namespace ExpressMapper
                         Expression.Convert(Expression.Convert(right, this._enumImplicitConversionType), destType));
                 }
 
-                if (typeof(IConvertible).GetInfo().IsAssignableFrom(destType)
-                    && typeof(IConvertible).GetInfo().IsAssignableFrom(sourceType))
+                if (typeof(IConvertible).GetTypeInfo().IsAssignableFrom(destType.GetTypeInfo())
+                    && typeof(IConvertible).GetTypeInfo().IsAssignableFrom(sourceType.GetTypeInfo()))
                 {
                     var assignExp = CreateConvertibleAssignExpression(
                         left,
@@ -301,9 +301,7 @@ namespace ExpressMapper
                         left,
                         Expression.Convert(
                             Expression.Call(
-                                typeof(Enum).GetInfo().GetMethod(
-                                    "Parse",
-                                    new[] { typeof(Type), typeof(string), typeof(bool) }),
+                                typeof(Enum).GetTypeInfo().GetMethod("Parse", new[] { typeof(Type), typeof(string), typeof(bool) }),
                                 Expression.Constant(setNullableType ?? setType),
                                 right,
                                 Expression.Constant(true)),
@@ -316,7 +314,7 @@ namespace ExpressMapper
                     left,
                     Expression.Convert(
                         Expression.Call(
-                            typeof(Convert).GetInfo().GetMethod("ChangeType", new[] { typeof(object), typeof(Type) }),
+                            typeof(Convert).GetTypeInfo().GetMethod("ChangeType", new[] { typeof(object), typeof(Type) }),
                             Expression.Convert(right, typeof(object)),
                             Expression.Constant(setNullableType ?? setType)),
                         setType)));
@@ -421,8 +419,12 @@ namespace ExpressMapper
                 string.Format("{0}Enum", Guid.NewGuid().ToString().Replace("-", "_")));
             var assignToEnum = Expression.Assign(
                 enumerator,
-                Expression.Call(sourceVariable, closedEnumerableSourceType.GetInfo().GetMethod("GetEnumerator")));
-            var doMoveNext = Expression.Call(enumerator, typeof(IEnumerator).GetInfo().GetMethod("MoveNext"));
+                Expression.Call(
+                    sourceVariable,
+                    closedEnumerableSourceType.GetTypeInfo().GetDeclaredMethod("GetEnumerator")));
+            var doMoveNext = Expression.Call(
+                enumerator,
+                typeof(IEnumerator).GetTypeInfo().GetDeclaredMethod("MoveNext"));
 
             var current = Expression.Property(enumerator, "Current");
             var sourceColItmVariable = Expression.Variable(
@@ -538,8 +540,12 @@ namespace ExpressMapper
             var enumerator = Expression.Variable(closedEnumeratorSourceType, "srcEnumerator");
             var assignToEnum = Expression.Assign(
                 enumerator,
-                Expression.Call(sourceParameterExp, closedEnumerableSourceType.GetInfo().GetMethod("GetEnumerator")));
-            var doMoveNext = Expression.Call(enumerator, typeof(IEnumerator).GetInfo().GetMethod("MoveNext"));
+                Expression.Call(
+                    sourceParameterExp,
+                    closedEnumerableSourceType.GetTypeInfo().GetDeclaredMethod("GetEnumerator")));
+            var doMoveNext = Expression.Call(
+                enumerator,
+                typeof(IEnumerator).GetTypeInfo().GetDeclaredMethod("MoveNext"));
 
             var current = Expression.Property(enumerator, "Current");
             var sourceColItmVariable = Expression.Variable(sourceType, "ItmSrc");
@@ -577,17 +583,17 @@ namespace ExpressMapper
         {
             return type.IsArray
                        ? type.GetElementType()
-                       : GetEnumerableInterface(type).GetInfo().GetGenericArguments()[0];
+                       : GetEnumerableInterface(type).GetTypeInfo().GenericTypeArguments[0];
         }
 
         internal static Type GetCollectioKeyElementType(Type type)
         {
-            return GetDictionaryInterface(type).GetInfo().GetGenericArguments()[0];
+            return GetDictionaryInterface(type).GetTypeInfo().GenericTypeArguments[0];
         }
 
         internal static Type GetCollectioValueElementType(Type type)
         {
-            return GetDictionaryInterface(type).GetInfo().GetGenericArguments()[1];
+            return GetDictionaryInterface(type).GetTypeInfo().GenericTypeArguments[1];
         }
 
         internal LoopExpression CollectionLoopExpression(
@@ -630,7 +636,7 @@ namespace ExpressMapper
         {
             if (destPropType.IsArray)
             {
-                return Expression.Call(destColl, destList.GetInfo().GetMethod("ToArray"));
+                return Expression.Call(destColl, destList.GetTypeInfo().GetDeclaredMethod("ToArray"));
             }
 
             if (!destPropType.GetTypeInfo().IsGenericType && GetEnumerableInterface(destPropType) == null)
@@ -638,7 +644,8 @@ namespace ExpressMapper
                 return destColl;
             }
 
-            if (destPropType.GetTypeInfo().IsInterface && destPropType.GetInfo().IsAssignableFrom(destColl.Type))
+            if (destPropType.GetTypeInfo().IsInterface
+                && destPropType.GetTypeInfo().IsAssignableFrom(destColl.Type.GetTypeInfo()))
             {
                 // This will handle any destination interface implemented by List<T>
                 return destColl;
@@ -656,12 +663,13 @@ namespace ExpressMapper
             }
             else
             {
-                ctor = destPropType.GetInfo().GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                ctor = destPropType.GetTypeInfo().DeclaredConstructors.Where(x => x.IsPublic && !x.IsAbstract)
                     .FirstOrDefault(
                         ci =>
                             {
                                 var param = ci.GetParameters();
-                                return param.Length == 1 && param[0].ParameterType.GetInfo().IsAssignableFrom(destList);
+                                return param.Length == 1 && param[0].ParameterType.GetTypeInfo()
+                                           .IsAssignableFrom(destList.GetTypeInfo());
                             });
 
                 if (ctor == null)
@@ -675,18 +683,20 @@ namespace ExpressMapper
 
         public static Type GetEnumerableInterface(Type type)
         {
-            return type.GetInfo().GetInterfaces().FirstOrDefault(
+            return type.GetTypeInfo().ImplementedInterfaces.FirstOrDefault(
                        t => t.GetTypeInfo().IsGenericType && t.GetGenericTypeDefinition() == GenericEnumerableType)
-                   ?? (type.GetTypeInfo().IsGenericType && type.GetInfo().GetInterfaces().Any(t => t == typeof(IEnumerable))
+                   ?? (type.GetTypeInfo().IsGenericType
+                       && type.GetTypeInfo().ImplementedInterfaces.Any(t => t == typeof(IEnumerable))
                            ? type
                            : null);
         }
 
         public static Type GetDictionaryInterface(Type type)
         {
-            return type.GetInfo().GetInterfaces().FirstOrDefault(
+            return type.GetTypeInfo().ImplementedInterfaces.FirstOrDefault(
                        t => t.GetTypeInfo().IsGenericType && t.GetGenericTypeDefinition() == GenericDictionaryType)
-                   ?? (type.GetTypeInfo().IsGenericType && type.GetInfo().GetInterfaces().Any(t => t == typeof(IDictionary))
+                   ?? (type.GetTypeInfo().IsGenericType
+                       && type.GetTypeInfo().ImplementedInterfaces.Any(t => t == typeof(IDictionary))
                            ? type
                            : null);
         }

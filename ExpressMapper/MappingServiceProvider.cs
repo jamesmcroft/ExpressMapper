@@ -114,8 +114,8 @@ namespace ExpressMapper
                     return typeMapper?.MemberConfiguration;
                 }
 
-                if (src.GetInfo().GetInterfaces().Any(t => t.Name.Contains(typeof(IEnumerable).Name))
-                    && dest.GetInfo().GetInterfaces().Any(t => t.Name.Contains(typeof(IEnumerable).Name)))
+                if (src.GetTypeInfo().ImplementedInterfaces.Any(t => t.Name.Contains(typeof(IEnumerable).Name))
+                    && dest.GetTypeInfo().ImplementedInterfaces.Any(t => t.Name.Contains(typeof(IEnumerable).Name)))
                 {
                     throw new InvalidOperationException(
                         $"It is invalid to register mapping for collection types from {src.FullName} to {dest.FullName}, please use just class registration mapping and your collections will be implicitly processed. In case you want to include some custom collection mapping please use: Mapper.RegisterCustom.");
@@ -240,7 +240,7 @@ namespace ExpressMapper
 
                 var delegateMapperType = typeof(DelegateCustomTypeMapper<,>).MakeGenericType(src, dest);
                 var newExpression = Expression.New(
-                    delegateMapperType.GetInfo().GetConstructor(new[] { typeof(Func<,>).MakeGenericType(src, dest) }),
+                    delegateMapperType.GetTypeInfo().GetConstructor(new[] { typeof(Func<,>).MakeGenericType(src, dest) }),
                     Expression.Constant(mapFunc));
                 var newLambda = Expression.Lambda<Func<ICustomTypeMapper<T, TN>>>(newExpression);
                 var compile = newLambda.Compile();
@@ -319,18 +319,18 @@ namespace ExpressMapper
                 return mapper != null ? mapper.MapTo(src, dest) : default(TN);
             }
 
-            var tCol = typeof(T).GetInfo().GetInterfaces().FirstOrDefault(
+            var tCol = typeof(T).GetTypeInfo().ImplementedInterfaces.FirstOrDefault(
                            t => t.GetTypeInfo().IsGenericType && t.GetGenericTypeDefinition() == GenericEnumerableType)
                        ?? (typeof(T).GetTypeInfo().IsGenericType
-                           && typeof(T).GetInfo().GetInterfaces().Any(t => t == typeof(IEnumerable))
+                           && typeof(T).GetTypeInfo().ImplementedInterfaces.Any(t => t == typeof(IEnumerable))
                                ? typeof(T)
                                : null);
 
             var tnCol =
-                typeof(TN).GetInfo().GetInterfaces().FirstOrDefault(
+                typeof(TN).GetTypeInfo().ImplementedInterfaces.FirstOrDefault(
                     t => t.GetTypeInfo().IsGenericType && t.GetGenericTypeDefinition() == GenericEnumerableType)
                 ?? (typeof(TN).GetTypeInfo().IsGenericType
-                    && typeof(TN).GetInfo().GetInterfaces().Any(t => t == typeof(IEnumerable))
+                    && typeof(TN).GetTypeInfo().ImplementedInterfaces.Any(t => t == typeof(IEnumerable))
                         ? typeof(TN)
                         : null);
 
@@ -409,7 +409,7 @@ namespace ExpressMapper
 
             ITypeMapper mapper = null;
             var actualSrcType = src.GetType();
-            if (srcType != actualSrcType && actualSrcType.GetInfo().IsAssignableFrom(srcType))
+            if (srcType != actualSrcType && actualSrcType.GetTypeInfo().IsAssignableFrom(srcType.GetTypeInfo()))
                 throw new InvalidCastException(
                     $"Your source object instance type '{actualSrcType.FullName}' is not assignable from source type you specified '{srcType}'.");
 
@@ -418,7 +418,7 @@ namespace ExpressMapper
             if (dest != null)
             {
                 var actualDstType = dest.GetType();
-                if (dstType != actualDstType && actualDstType.GetInfo().IsAssignableFrom(dstType))
+                if (dstType != actualDstType && actualDstType.GetTypeInfo().IsAssignableFrom(dstType.GetTypeInfo()))
                     throw new InvalidCastException(
                         $"Your destination object instance type '{actualSrcType.FullName}' is not assignable from destination type you specified '{srcType}'.");
 
@@ -438,7 +438,7 @@ namespace ExpressMapper
                     var mappings = this.CustomMappingsBySource[srcHash];
                     var typeMappers = mappings.Where(m => this.SourceService.TypeMappers.ContainsKey(m))
                         .Select(m => this.SourceService.TypeMappers[m])
-                        .Where(m => dstType.GetInfo().IsAssignableFrom(m.DestinationType)).ToList();
+                        .Where(m => dstType.GetTypeInfo().IsAssignableFrom(m.DestinationType.GetTypeInfo())).ToList();
                     if (typeMappers.Count > 1)
                     {
                         if (typeMappers.All(tm => tm.DestinationType != dstType))
@@ -470,18 +470,18 @@ namespace ExpressMapper
                 return nonGenericMapFunc(src, dest);
             }
 
-            var tCol = srcType.GetInfo().GetInterfaces().FirstOrDefault(
+            var tCol = srcType.GetTypeInfo().ImplementedInterfaces.FirstOrDefault(
                            t => t.GetTypeInfo().IsGenericType && t.GetGenericTypeDefinition() == GenericEnumerableType)
                        ?? (srcType.GetTypeInfo().IsGenericType
-                           && srcType.GetInfo().GetInterfaces().Any(t => t == typeof(IEnumerable))
+                           && srcType.GetTypeInfo().ImplementedInterfaces.Any(t => t == typeof(IEnumerable))
                                ? srcType
                                : null);
 
             var tnCol =
-                dstType.GetInfo().GetInterfaces().FirstOrDefault(
+                dstType.GetTypeInfo().ImplementedInterfaces.FirstOrDefault(
                     t => t.GetTypeInfo().IsGenericType && t.GetGenericTypeDefinition() == GenericEnumerableType)
                 ?? (dstType.GetTypeInfo().IsGenericType
-                    && dstType.GetInfo().GetInterfaces().Any(t => t == typeof(IEnumerable))
+                    && dstType.GetTypeInfo().ImplementedInterfaces.Any(t => t == typeof(IEnumerable))
                         ? dstType
                         : null);
 
@@ -504,8 +504,8 @@ namespace ExpressMapper
                     $"There is no mapping has been found. Source Type: {srcType.FullName}, Destination Type: {dstType.FullName}");
             }
 
-            var source = src;
-            var destination = dest;
+            dynamic source = src;
+            dynamic destination = dest;
             Register(source, destination);
             return this.MapNonGenericInternal(srcType, dstType, src, dest, true);
         }
@@ -515,7 +515,7 @@ namespace ExpressMapper
             var cacheKey = this.CalculateCacheKey(srcType, dstType);
             if (this._nonGenericCollectionMappingCache.Contains(cacheKey)) return;
 
-            var methodInfo = this.GetType().GetInfo().GetMethod("PrecompileCollection", new Type[] { });
+            var methodInfo = this.GetType().GetTypeInfo().GetMethod("PrecompileCollection", new Type[] { });
             var makeGenericMethod = methodInfo.MakeGenericMethod(srcType, dstType);
             var methodCallExpression = Expression.Call(Expression.Constant(this), makeGenericMethod);
             var expression = Expression.Lambda<Action>(methodCallExpression);
@@ -550,7 +550,7 @@ namespace ExpressMapper
                 customGenericType);
             var genVariable = Expression.Variable(customGenericType);
             var assignExp = Expression.Assign(genVariable, castToCustomGeneric);
-            var methodInfo = customGenericType.GetInfo().GetMethod("Map");
+            var methodInfo = customGenericType.GetTypeInfo().GetDeclaredMethod("Map");
             var genericMappingContextType = typeof(DefaultMappingContext<,>).MakeGenericType(srcType, dstType);
             var newMappingContextExp = Expression.New(genericMappingContextType);
 
@@ -590,7 +590,7 @@ namespace ExpressMapper
 
         internal static Type GetCollectionElementType(Type type)
         {
-            return type.IsArray ? type.GetElementType() : type.GetInfo().GetGenericArguments()[0];
+            return type.IsArray ? type.GetElementType() : type.GetTypeInfo().GenericTypeArguments[0];
         }
 
         public long CalculateCacheKey(Type source, Type dest)

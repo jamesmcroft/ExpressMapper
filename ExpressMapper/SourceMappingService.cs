@@ -56,16 +56,16 @@ namespace ExpressMapper
         protected override bool ComplexMapCondition(Type src, Type dst)
         {
             var tCol =
-                src.GetInfo().GetInterfaces().FirstOrDefault(
+                src.GetTypeInfo().ImplementedInterfaces.FirstOrDefault(
                     t => t.GetTypeInfo().IsGenericType && t.GetGenericTypeDefinition() == GenericEnumerableType)
-                ?? (src.GetTypeInfo().IsGenericType && src.GetInfo().GetInterfaces().Any(t => t == typeof(IEnumerable))
+                ?? (src.GetTypeInfo().IsGenericType && src.GetTypeInfo().ImplementedInterfaces.Any(t => t == typeof(IEnumerable))
                         ? src
                         : null);
 
             var tnCol =
-                dst.GetInfo().GetInterfaces().FirstOrDefault(
+                dst.GetTypeInfo().ImplementedInterfaces.FirstOrDefault(
                     t => t.GetTypeInfo().IsGenericType && t.GetGenericTypeDefinition() == GenericEnumerableType)
-                ?? (dst.GetTypeInfo().IsGenericType && dst.GetInfo().GetInterfaces().Any(t => t == typeof(IEnumerable))
+                ?? (dst.GetTypeInfo().IsGenericType && dst.GetTypeInfo().ImplementedInterfaces.Any(t => t == typeof(IEnumerable))
                         ? dst
                         : null);
             if (tCol == null || tnCol == null || (src == typeof(string) && dst == typeof(string)))
